@@ -41,15 +41,21 @@ if st.button("Search"):
 
             viewstate = soup.find('input', {'id': '__VIEWSTATE'})
             event_validation = soup.find('input', {'id': '__EVENTVALIDATION'})
+            viewstategen = soup.find('input', {'id': '__VIEWSTATEGENERATOR'})
 
             payload = {
                 '__VIEWSTATE': viewstate['value'] if viewstate else '',
+                '__VIEWSTATEGENERATOR': viewstategen['value'] if viewstategen else '',
                 '__EVENTVALIDATION': event_validation['value'] if event_validation else '',
                 'ctl00$MainContent$txtAddress': address_input,
                 'ctl00$MainContent$btnSearch': 'Search',
             }
 
-            result = session.post(search_url, data=payload)
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+
+            result = session.post(search_url, data=payload, headers=headers)
             result_soup = BeautifulSoup(result.text, 'html.parser')
 
             details_div = result_soup.find("div", id="MainContent_pnlResults")
@@ -73,3 +79,4 @@ if st.button("Search"):
 
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
+
