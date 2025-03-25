@@ -14,6 +14,56 @@ search_url = "https://ssc.sedgwickcounty.org/propertytax/"
 # Replace with your OpenAI API key
 openai.api_key = st.secrets["openai_api_key"] if "openai_api_key" in st.secrets else "YOUR_OPENAI_API_KEY"
 
+# Mapping for common suffix abbreviations
+suffix_map = {
+    "street": "St",
+    "st": "St",
+    "avenue": "Ave",
+    "ave": "Ave",
+    "drive": "Dr",
+    "dr": "Dr",
+    "road": "Rd",
+    "rd": "Rd",
+    "lane": "Ln",
+    "ln": "Ln",
+    "court": "Ct",
+    "ct": "Ct",
+    "circle": "Cir",
+    "cir": "Cir",
+    "place": "Pl",
+    "pl": "Pl",
+    "terrace": "Ter",
+    "ter": "Ter",
+    "boulevard": "Blvd",
+    "blvd": "Blvd",
+    "parkway": "Pkwy",
+    "pkwy": "Pkwy"
+}
+
+# Mapping for directions
+direction_map = {
+    "north": "N",
+    "south": "S",
+    "east": "E",
+    "west": "W",
+    "n": "N",
+    "s": "S",
+    "e": "E",
+    "w": "W"
+}
+
+def clean_address(address):
+    words = address.lower().split()
+    cleaned = []
+    for word in words:
+        if word in direction_map:
+            cleaned.append(direction_map[word])
+        elif word in suffix_map:
+            cleaned.append(suffix_map[word])
+        else:
+            cleaned.append(word.capitalize())
+    return " ".join(cleaned)
+
 def summarize_with_gpt(property_data):
     prompt = f"""
     Summarize the following Sedgwick County property information in a concise and friendly format. Highlight the most important facts like the year built, square footage, lot size, and value.
@@ -35,6 +85,8 @@ def summarize_with_gpt(property_data):
 if st.button("Search"):
     with st.spinner("Searching Sedgwick County records..."):
         try:
+            cleaned_address = clean_address(address_input)
+
             session = requests.Session()
             res = session.get(search_url)
             soup = BeautifulSoup(res.text, 'html.parser')
@@ -47,7 +99,7 @@ if st.button("Search"):
                 '__VIEWSTATE': viewstate['value'] if viewstate else '',
                 '__VIEWSTATEGENERATOR': viewstategen['value'] if viewstategen else '',
                 '__EVENTVALIDATION': event_validation['value'] if event_validation else '',
-                'ctl00$MainContent$txtAddress': address_input,
+                'ctl00$MainContent$txtAddress': cleaned_address,
                 'ctl00$MainContent$btnSearch': 'Search',
             }
 
@@ -60,7 +112,7 @@ if st.button("Search"):
 
             details_div = result_soup.find("div", id="MainContent_pnlResults")
             if not details_div:
-                st.warning("No property found. Try a full street address like '123 N Main St'.")
+                st.warning(f"No property found for '{cleaned_address}'. Please check the spelling or try another address.")
             else:
                 st.subheader("Property Details")
                 rows = details_div.find_all("tr")
