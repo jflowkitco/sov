@@ -79,4 +79,3 @@ if st.button("Search"):
 
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
-
